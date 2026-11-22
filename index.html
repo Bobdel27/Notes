@@ -72,6 +72,9 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
 .card.dropto{outline:3px solid var(--accent);outline-offset:2px}
 #bk{background:#dbe7ff}
 .rem .btn{background:var(--b);border:1px solid var(--b);font-size:.9rem;padding:4px 12px;min-height:36px}
+.links{display:flex;flex-direction:column;gap:4px}
+.links a{color:var(--accent);font-weight:600;overflow-wrap:anywhere;text-decoration:underline;min-height:28px;display:block}
+.card[data-c]:not([data-c=""]) .links a{color:#1a3fa8}
 .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
 .tab{background:var(--card);border:1px solid var(--line);border-radius:8px 8px 0 0;padding:4px 2px;min-height:36px;font-weight:600;font-size:.8rem;overflow-wrap:anywhere;text-align:center;line-height:1.2}
 .tab .ct{display:inline;margin-left:3px;font-size:.72rem;font-weight:500;opacity:.75}
@@ -316,6 +319,13 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
       return '<div class="it' + (i.done ? ' is-done' : '') + '" data-i="' + i.id + '"><input type="checkbox" class="i-check" aria-label="Étape faite"' + (i.done ? ' checked' : '') + '><input class="i-text" type="text" aria-label="Étape" value="' + esc(i.text) + '"><button type="button" class="i-rm" aria-label="Retirer l\'étape">×</button></div>';
     }).join('');
   }
+  function linksHTML(n) {
+    var txt = n.body + ' ' + n.items.map(function (i) { return i.text; }).join(' ');
+    var m = txt.match(/(https?:\/\/|www\.)[^\s<>"']+/gi) || [], seen = {};
+    return m.map(function (u) { return u.replace(/[.,;:!?)\]]+$/, ''); }).filter(function (u) { if (seen[u]) return false; seen[u] = 1; return true; }).map(function (u) {
+      return '<a href="' + esc(/^www\./i.test(u) ? 'https://' + u : u) + '" target="_blank" rel="noopener noreferrer">🔗 ' + esc(u) + '</a>';
+    }).join('');
+  }
   function progText(n) { if (!n.items.length) return ''; return n.items.filter(function (i) { return i.done; }).length + '/' + n.items.length + ' étapes'; }
   function foldSel(n) {
     return '<select class="c-fold" aria-label="Pochette"><option value="">Sans pochette</option>' + state.folders.map(function (f) { return '<option value="' + f.id + '"' + (n.folder === f.id ? ' selected' : '') + '>' + esc(f.name) + '</option>'; }).join('') + '</select>';
@@ -327,6 +337,7 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
     return '<div class="c-detail">' +
       '<input class="c-title" type="text" placeholder="Titre" aria-label="Titre" value="' + esc(n.title) + '">' +
       '<textarea class="c-text" placeholder="Ce que j\'ai à faire…" aria-label="Contenu">' + esc(n.body) + '</textarea>' +
+      '<div class="links">' + linksHTML(n) + '</div>' +
       '<div class="items">' + itemsHTML(n) + '</div>' +
       '<input class="i-add" type="text" placeholder="+ Ajouter une étape" aria-label="Ajouter une étape">' +
       '<div class="row"><label class="chk">Casier ' + boxSel(n.box, 'c-box') + '</label>' +
@@ -388,6 +399,7 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
     return nc;
   }
   function updateMeta(card, n) {
+    var lk = card.querySelector('.links'); if (lk) lk.innerHTML = linksHTML(n);
     var p = card.querySelector('.prog'); if (p) p.textContent = progText(n);
     var d = card.querySelector('.due'); if (d) { d.classList.remove('late', 'now'); var ds = dueState(n); if (ds) d.classList.add(ds); }
     card.classList.toggle('late', dueState(n) === 'late');
@@ -521,9 +533,9 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
     var t = e.target;
     if (/c-title|c-text|c-due|i-text/.test(t.className) && !typing) { snap(); typing = true; }
     if (t.classList.contains('c-title')) { n.title = t.value; card.querySelector('.ttl').textContent = t.value || 'Sans titre'; }
-    else if (t.classList.contains('c-text')) { n.body = t.value; fit(t); }
+    else if (t.classList.contains('c-text')) { n.body = t.value; fit(t); updateMeta(card, n); }
     else if (t.classList.contains('c-due')) { n.due = t.value; updateMeta(card, n); }
-    else if (t.classList.contains('i-text')) { var it = item(n, t.closest('.it').getAttribute('data-i')); if (it) it.text = t.value; }
+    else if (t.classList.contains('i-text')) { var it = item(n, t.closest('.it').getAttribute('data-i')); if (it) { it.text = t.value; updateMeta(card, n); } }
     else return;
     save();
   });
