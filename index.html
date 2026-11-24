@@ -740,28 +740,22 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
     var due = state.notes.filter(function (n) { return !n.trashed && !n.done && n.due && n.due <= t; });
     var late = due.filter(function (n) { return n.due < t; }).length, now = due.length - late;
     var box = $('rem');
-    if (!due.length || remOff === t) { box.hidden = true; }
+    var on = lsGet('mes-notes-remon') !== '0';
+    try { $('rmd').textContent = on ? '🔔 Rappels : activés' : '🔕 Rappels : désactivés'; } catch (e) {}
+    if (!on || !due.length || remOff === t) { box.hidden = true; }
     else {
       var names = due.slice(0, 3).map(function (n) { return n.title || 'Sans titre'; }).join(', ') + (due.length > 3 ? '…' : '');
       $('remtxt').textContent = (now ? now + " pour aujourd'hui" : '') + (now && late ? ' · ' : '') + (late ? late + ' en retard' : '') + ' : ' + names;
       box.hidden = false;
     }
-    try {
-      var k = t + '|' + due.map(function (n) { return n.id; }).join(',');
-      if (due.length && 'Notification' in window && Notification.permission === 'granted' && localStorage.getItem('mes-notes-rem') !== k) {
-        localStorage.setItem('mes-notes-rem', k);
-        new Notification('Mes Tâches', { body: due.length + ' tâche(s) à faire : ' + names });
-      }
-    } catch (e) {}
-    try { $('rmd').textContent = ('Notification' in window && Notification.permission === 'granted') ? '🔔 Rappels activés' : '🔔 Rappels'; } catch (e) {}
   }
-  $('remx').addEventListener('click', function () { remOff = today(); $('rem').hidden = true; });
   $('rmd').addEventListener('click', function () {
-    try {
-      if (!('Notification' in window)) { alert('Notifications non disponibles ici : le bandeau de rappel reste actif.'); return; }
-      Notification.requestPermission().then(function () { remOff = ''; remind(); });
-    } catch (e) {}
+    var on = lsGet('mes-notes-remon') !== '0';
+    lsSet('mes-notes-remon', on ? '0' : '1');
+    remOff = '';
+    remind();
   });
+  $('remx').addEventListener('click', function () { remOff = today(); $('rem').hidden = true; });
   function tick() { if (autoUrgent()) renderAll(); else remind(); backup(); }
   setInterval(tick, 60000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
