@@ -190,7 +190,7 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
       <textarea class="w-body" id="wBody" placeholder="Ce que j'ai à faire…" aria-label="Contenu"></textarea>
       <div id="wItems"></div>
       <input class="i-add" id="wAdd" type="text" placeholder="+ Ajouter une étape" aria-label="Ajouter une étape">
-      <div class="row"><label class="due">Échéance <input type="date" class="w-due" id="wDue"></label></div>
+      <div class="row"><label class="due">Échéance <input type="date" class="w-due" id="wDue"></label><button type="button" class="btn ic sm" id="wDueClr" aria-label="Effacer l'échéance">✕</button></div>
       <div class="row"><span>Casier</span><select class="w-box" id="wBox" aria-label="Casier"></select></div>
       <div class="row" hidden><span>Pochette</span><select class="w-fold" id="wFold" aria-label="Pochette"></select></div>
       <div class="row"><span>Couleur</span><div class="pal" id="wPal" role="group" aria-label="Couleur"></div></div>
@@ -341,7 +341,7 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
       '<div class="items">' + itemsHTML(n) + '</div>' +
       '<input class="i-add" type="text" placeholder="+ Ajouter une étape" aria-label="Ajouter une étape">' +
       '<div class="row"><label class="chk">Casier ' + boxSel(n.box, 'c-box') + '</label>' +
-        '<label class="due ' + dueState(n) + '">Échéance <input type="date" class="c-due" value="' + esc(n.due) + '"></label><span class="prog">' + progText(n) + '</span></div>' +
+        '<label class="due ' + dueState(n) + '">Échéance <input type="date" class="c-due" value="' + esc(n.due) + '"></label><button type="button" class="btn ic sm c-dueclr" aria-label="Effacer l\'échéance"' + (n.due ? '' : ' hidden') + '>✕</button><span class="prog">' + progText(n) + '</span></div>' +
       '<div class="row"><div class="pal" role="group" aria-label="Couleur">' + palHTML(n.color) + '</div></div>' +
       '<div class="row"><button type="button" class="btn ic c-pin" aria-pressed="' + n.pinned + '" aria-label="Épingler" title="Épingler en haut">' + ICON_PIN + '</button><span class="grow">Créée le ' + short(n.date) + '</span><button type="button" class="btn red c-del">Supprimer</button></div></div>';
   }
@@ -420,6 +420,7 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
   $('wTitle').addEventListener('input', function (e) { draft.title = e.target.value; saveDraft(); });
   $('wBody').addEventListener('input', function (e) { draft.body = e.target.value; fit(e.target); saveDraft(); });
   $('wDue').addEventListener('input', function (e) { draft.due = e.target.value; saveDraft(); });
+  $('wDueClr').addEventListener('click', function () { $('wDue').value = ''; draft.due = ''; saveDraft(); });
   $('wBox').addEventListener('change', function (e) { draft.box = e.target.value; saveDraft(); });
   $('wFold').addEventListener('change', function (e) { draft.folder = e.target.value; saveDraft(); });
   $('wPal').addEventListener('click', function (e) {
@@ -534,7 +535,7 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
     if (/c-title|c-text|c-due|i-text/.test(t.className) && !typing) { snap(); typing = true; }
     if (t.classList.contains('c-title')) { n.title = t.value; card.querySelector('.ttl').textContent = t.value || 'Sans titre'; }
     else if (t.classList.contains('c-text')) { n.body = t.value; fit(t); updateMeta(card, n); }
-    else if (t.classList.contains('c-due')) { n.due = t.value; updateMeta(card, n); }
+    else if (t.classList.contains('c-due')) { n.due = t.value; var cb = card.querySelector('.c-dueclr'); if (cb) cb.hidden = !t.value; updateMeta(card, n); }
     else if (t.classList.contains('i-text')) { var it = item(n, t.closest('.it').getAttribute('data-i')); if (it) { it.text = t.value; updateMeta(card, n); } }
     else return;
     save();
@@ -550,6 +551,11 @@ input[type=date]{min-height:1.6em;-webkit-appearance:none;appearance:none}
     } else if (t.classList.contains('c-fold')) {
       snap(); n.folder = t.value; save(); renderAll();
     }
+  });
+  board.addEventListener('click', function (e) {
+    var b = e.target.closest('.c-dueclr'); if (!b) return;
+    var card = b.closest('.card'), n = find(card.getAttribute('data-id')); if (!n) return;
+    snap(); n.due = ''; card.querySelector('.c-due').value = ''; b.hidden = true; updateMeta(card, n); save(); remind();
   });
   board.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' || e.isComposing || !e.target.classList.contains('i-add')) return;
